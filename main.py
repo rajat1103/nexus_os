@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import get_vector_client
 
 app = FastAPI(title="NEXUS OS")
 
@@ -23,6 +24,15 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/db-check")
+async def database_health():
+    try:
+        client = get_vector_client()
+        heartbeat = client.heartbeat()
+        return {"database_status": "connected", "heartbeat": heartbeat}
+    except Exception as e:
+        return {"database_status": "error", "details": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
