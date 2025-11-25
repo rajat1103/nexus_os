@@ -1,21 +1,13 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from app.core.database import get_vector_client
+from app.services.brain import store_memory
 
 app = FastAPI(title="NEXUS OS")
 
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class MemoryRequest(BaseModel):
+    content: str
+    category: str = "general"
 
 @app.get("/")
 async def root():
@@ -33,6 +25,14 @@ async def database_health():
         return {"database_status": "connected", "heartbeat": heartbeat}
     except Exception as e:
         return {"database_status": "error", "details": str(e)}
+
+@app.post("/learn")
+async def learn_new_information(memory: MemoryRequest):
+    try:
+        result = store_memory(memory.content, memory.category)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
